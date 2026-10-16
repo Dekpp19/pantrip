@@ -25,7 +25,7 @@ type User struct {
 	Username, Role string
 }
 type Note struct {
-	ID, UserID            int
+	ID, UserID, Replies   int
 	Owner, Title, Content string
 	Created               time.Time
 }
@@ -75,38 +75,57 @@ const pages = `
 <meta name="viewport" content="width=device-width, initial-scale=1">
 <style>
 *{box-sizing:border-box}
-body{font-family:'Segoe UI',Tahoma,sans-serif;background:#f3f4f6;color:#222;
-  max-width:760px;margin:0 auto;padding:0 16px 40px;line-height:1.5}
+:root{--red:#b83245;--red-d:#8f2436;--red-l:#fbeaec;--line:#f0d5d9;--ink:#2b2224;--mute:#7a6a6d}
+body{font-family:'Segoe UI','Noto Sans Thai',Tahoma,sans-serif;background:#faf5f5;color:var(--ink);
+  max-width:780px;margin:0 auto;padding:0 16px 48px;line-height:1.6}
 hr{display:none}
-a{color:#2563eb}
-nav{background:#2563eb;color:#fff;border-radius:10px;margin:16px 0 24px;
-  padding:12px 16px;display:flex;flex-wrap:wrap;gap:14px;align-items:center}
-nav a{color:#fff;text-decoration:none}
-nav a:hover{text-decoration:underline}
-h2{margin:0 0 16px}
-h3{margin:0 0 12px}
-.box{background:#fff;border:1px solid #e5e7eb;border-radius:10px;padding:16px;margin:14px 0}
-.box a.title{color:#111;text-decoration:none;font-size:1.1em}
-.box a.title:hover{color:#2563eb;text-decoration:underline}
+a{color:var(--red);text-decoration:none}
+a:hover{text-decoration:underline}
+nav{background:linear-gradient(135deg,#c23b4e,#9b2639);color:#fff;border-radius:0 0 16px 16px;
+  margin:0 0 26px;padding:14px 20px;display:flex;flex-wrap:wrap;gap:16px;align-items:center;
+  box-shadow:0 4px 14px rgba(155,38,57,.25)}
+nav a{color:#fff;font-weight:500}
+nav .brand{font-size:1.25em;font-weight:700;letter-spacing:.3px}
+nav .sp{flex:1}
+nav .who{opacity:.9;font-size:.95em}
+nav form.inline{margin:0}
+nav button{background:#fff;color:var(--red);font-weight:600;padding:6px 14px}
+nav button:hover{background:var(--red-l)}
+h2{margin:0 0 18px;font-size:1.5em;color:var(--red-d)}
+h3{margin:0 0 12px;color:var(--red-d)}
+.box{background:#fff;border:1px solid var(--line);border-radius:14px;padding:18px 20px;margin:16px 0;
+  box-shadow:0 2px 8px rgba(120,40,50,.06)}
+.thread,.post{border-left:5px solid var(--red)}
+.thread{transition:box-shadow .15s,transform .15s}
+.thread:hover{box-shadow:0 8px 20px rgba(120,40,50,.14);transform:translateY(-1px)}
+.thread a.title{color:var(--ink);font-size:1.2em;font-weight:700}
+.thread a.title:hover{color:var(--red);text-decoration:none}
+.meta{color:var(--mute);font-size:.85em;margin:2px 0 8px}
+.thread .content{margin:6px 0}
+.thread-foot{display:flex;flex-wrap:wrap;gap:12px;align-items:center;margin-top:12px;padding-top:12px;
+  border-top:1px dashed var(--line);font-size:.92em}
+.badge{background:var(--red-l);color:var(--red-d);border-radius:999px;padding:2px 12px;font-size:.85em;font-weight:600}
 .content{white-space:pre-wrap;word-break:break-word}
-input,textarea{display:block;width:100%;margin:8px 0 12px;padding:10px;
-  border:1px solid #d1d5db;border-radius:6px;font:inherit}
+input,textarea{display:block;width:100%;margin:8px 0 12px;padding:10px 12px;background:#fffdfd;
+  border:1px solid #e3c9cd;border-radius:8px;font:inherit}
+input:focus,textarea:focus{outline:none;border-color:var(--red);box-shadow:0 0 0 3px rgba(184,50,69,.15)}
 textarea{min-height:100px;resize:vertical}
-button{background:#2563eb;color:#fff;border:0;border-radius:6px;
-  padding:8px 16px;font:inherit;cursor:pointer}
-button:hover{opacity:.9}
-form[action*=delete] button{background:#dc2626}
-nav button{background:#fff;color:#2563eb}
-.err{background:#fee2e2;color:#b91c1c;padding:10px 14px;border-radius:6px;margin-bottom:16px}
-form.inline{display:inline;margin-left:8px}
-.cmt{border-top:1px solid #e5e7eb;padding:10px 0}
+button{background:var(--red);color:#fff;border:0;border-radius:8px;padding:9px 18px;font:inherit;
+  font-weight:600;cursor:pointer;transition:background .15s}
+button:hover{background:var(--red-d)}
+form[action*=delete] button{background:#fff;color:var(--red);border:1px solid #e8b4ba;padding:6px 14px}
+form[action*=delete] button:hover{background:var(--red-l)}
+.err{background:#fdecee;color:#a1202f;border:1px solid #f3c1c7;padding:10px 14px;border-radius:8px;margin-bottom:16px}
+form.inline{display:inline;margin-left:0}
+.cmt{border-top:1px solid var(--line);padding:12px 0}
 .cmt p{margin:4px 0 0}
-.cmt small{color:#6b7280}
+.cmt small{color:var(--mute)}
+.cmt b{color:var(--red-d)}
 </style></head><body>
-<nav><a href="/">หน้าแรก</a>
-{{if .User}}{{if eq .User.Role "admin"}} | <a href="/admin">แอดมิน</a>{{end}} | สวัสดี {{.User.Username}} ({{.User.Role}})
+<nav><a class="brand" href="/">Go App</a><span class="sp"></span>
+{{if .User}}{{if eq .User.Role "admin"}}<a href="/admin">แอดมิน</a>{{end}}<span class="who">สวัสดี {{.User.Username}} ({{.User.Role}})</span>
 <form class="inline" method="post" action="/logout"><input type="hidden" name="csrf" value="{{.CSRF}}"><button>ออกจากระบบ</button></form>
-{{else}} | <a href="/login">เข้าสู่ระบบ</a> | <a href="/register">สมัครสมาชิก</a>{{end}}</nav><hr>
+{{else}}<a href="/login">เข้าสู่ระบบ</a><a href="/register">สมัครสมาชิก</a>{{end}}</nav><hr>
 {{if .Error}}<p class="err">{{.Error}}</p>{{end}}{{end}}
 
 {{define "register"}}{{template "head" .}}<h2>สมัครสมาชิก</h2>
@@ -121,25 +140,29 @@ form.inline{display:inline;margin-left:8px}
 <input name="password" type="password" placeholder="รหัสผ่าน" required>
 <button>เข้าสู่ระบบ</button></form></body></html>{{end}}
 
-{{define "index"}}{{template "head" .}}<h2>บันทึกทั้งหมด</h2>
-{{if .User}}<div class="box"><h3>เพิ่มบันทึกใหม่</h3>
+{{define "index"}}{{template "head" .}}<h2>กระทู้ทั้งหมด</h2>
+{{if .User}}<div class="box"><h3>ตั้งกระทู้ใหม่</h3>
 <form method="post" action="/notes/create"><input type="hidden" name="csrf" value="{{.CSRF}}">
 <input name="title" placeholder="หัวข้อ" required><textarea name="content" placeholder="เนื้อหา" required></textarea>
-<button>บันทึก</button></form></div>{{end}}
-{{range .Notes}}<div class="box">
-<a class="title" href="/notes/view?id={{.ID}}"><b>{{.Title}}</b></a> <small>โดย {{.Owner}} · {{.Created.Format "02/01/2006 15:04"}}</small>
+<button>โพสต์กระทู้</button></form></div>{{end}}
+{{range .Notes}}<div class="box thread">
+<a class="title" href="/notes/view?id={{.ID}}">{{.Title}}</a>
+<div class="meta">โดย {{.Owner}} · {{.Created.Format "02/01/2006 15:04"}}</div>
 <p class="content">{{short .Content}}</p>
+<div class="thread-foot">
+<span class="badge">💬 {{.Replies}} ความคิดเห็น</span>
 <a href="/notes/view?id={{.ID}}">อ่านต่อ »</a>
-{{if and $.User (eq $.User.ID .UserID)}} | <a href="/notes/edit?id={{.ID}}">แก้ไข</a>
+{{if and $.User (eq $.User.ID .UserID)}}<a href="/notes/edit?id={{.ID}}">แก้ไข</a>
 <form class="inline" method="post" action="/notes/delete"><input type="hidden" name="csrf" value="{{$.CSRF}}">
-<input type="hidden" name="id" value="{{.ID}}"><button>ลบ</button></form>{{end}}</div>
-{{else}}<p>ยังไม่มีบันทึก</p>{{end}}
+<input type="hidden" name="id" value="{{.ID}}"><button>ลบ</button></form>{{end}}
+</div></div>
+{{else}}<p>ยังไม่มีกระทู้</p>{{end}}
 </body></html>{{end}}
 
 {{define "view"}}{{template "head" .}}
-<div class="box">
+<div class="box post">
 <h2>{{.Note.Title}}</h2>
-<small>โดย {{.Note.Owner}} · {{.Note.Created.Format "02/01/2006 15:04"}}</small>
+<div class="meta">โดย {{.Note.Owner}} · {{.Note.Created.Format "02/01/2006 15:04"}}</div>
 <p class="content">{{.Note.Content}}</p>
 <a href="/">« กลับหน้าแรก</a>
 {{if and .User (eq .User.ID .Note.UserID)}} | <a href="/notes/edit?id={{.Note.ID}}">แก้ไข</a>
@@ -360,7 +383,8 @@ func needAdmin(w http.ResponseWriter, r *http.Request, s *Session) bool {
 
 func allNotes() []Note {
 	var list []Note
-	rows, err := db.Query(`SELECT n.id,n.user_id,u.username,n.title,n.content,n.created_at
+	rows, err := db.Query(`SELECT n.id,n.user_id,u.username,n.title,n.content,n.created_at,
+		(SELECT COUNT(*) FROM comments c WHERE c.note_id=n.id)
 		FROM notes n JOIN users u ON u.id=n.user_id ORDER BY n.id DESC`)
 	if err != nil {
 		log.Println("allNotes:", err)
@@ -369,7 +393,7 @@ func allNotes() []Note {
 	defer rows.Close()
 	for rows.Next() {
 		var n Note
-		if err := rows.Scan(&n.ID, &n.UserID, &n.Owner, &n.Title, &n.Content, &n.Created); err != nil {
+		if err := rows.Scan(&n.ID, &n.UserID, &n.Owner, &n.Title, &n.Content, &n.Created, &n.Replies); err != nil {
 			log.Println("scan:", err)
 			continue
 		}
@@ -614,24 +638,29 @@ func connectDB() {
 	pass := os.Getenv("DB_PASS") // XAMPP ค่าเริ่มต้น root ไม่มีรหัสผ่าน
 	host := env("DB_HOST", "127.0.0.1:3307")
 	name := env("DB_NAME", "gonotes")
+	tlsOpt := ""
+	if v := os.Getenv("DB_TLS"); v != "" { // ฐานข้อมูลบนคลาวด์ (เช่น Aiven) ต้องใช้ TLS: ตั้ง DB_TLS=skip-verify
+		tlsOpt = "&tls=" + v
+	}
 
 	// 1) สร้างฐานข้อมูลให้อัตโนมัติถ้ายังไม่มี
-	boot, err := sql.Open("mysql", fmt.Sprintf("%s:%s@tcp(%s)/?charset=utf8mb4", user, pass, host))
+	boot, err := sql.Open("mysql", fmt.Sprintf("%s:%s@tcp(%s)/?charset=utf8mb4%s", user, pass, host, tlsOpt))
 	if err != nil {
 		log.Fatal(err)
 	}
 	if _, err := boot.Exec("CREATE DATABASE IF NOT EXISTS `" + name + "` CHARACTER SET utf8mb4 COLLATE utf8mb4_unicode_ci"); err != nil {
-		log.Fatal("เชื่อม MySQL ไม่ได้ (เปิด MySQL ใน XAMPP แล้วหรือยัง?): ", err)
+		// บนโฮสบางที่ไม่อนุญาตสร้างฐานข้อมูล (มีให้แล้ว) จึงเตือนไว้ก่อน แล้วลองเชื่อมต่อจริงต่อ
+		log.Println("สร้างฐานข้อมูลอัตโนมัติไม่ได้ (ข้ามไปลองเชื่อมต่อต่อ):", err)
 	}
 	boot.Close()
 
 	// 2) เชื่อมฐานข้อมูลจริง
-	db, err = sql.Open("mysql", fmt.Sprintf("%s:%s@tcp(%s)/%s?charset=utf8mb4&parseTime=true&loc=Local", user, pass, host, name))
+	db, err = sql.Open("mysql", fmt.Sprintf("%s:%s@tcp(%s)/%s?charset=utf8mb4&parseTime=true&loc=Local%s", user, pass, host, name, tlsOpt))
 	if err != nil {
 		log.Fatal(err)
 	}
 	if err := db.Ping(); err != nil {
-		log.Fatal(err)
+		log.Fatal("เชื่อมต่อฐานข้อมูลไม่ได้ (เช็ก DB_HOST/DB_USER/DB_PASS/DB_NAME และ MySQL เปิดอยู่ไหม): ", err)
 	}
 	db.SetMaxOpenConns(10)
 
